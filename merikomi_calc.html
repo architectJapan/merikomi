@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>merikomi_calc.html（柱脚めり込み耐力）</title>
+  <style>
+    :root{
+      --bg:#0b0f17; --card:#121a27; --ink:#e7eefc; --muted:#9fb0cf; --line:#23314a;
+      --btn:#2b6cff; --btn2:#1b2a43; --ok:#2be3a6; --ng:#ff5b7a; --paperLine:#d9d9d9;
+    }
+    body{
+      margin:0;background:linear-gradient(180deg,#0b0f17,#070a10);color:var(--ink);
+      font-family:system-ui,-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+    }
+
+    /* ===== 上部バー（印刷では非表示） ===== */
+    .bar{
+      position:sticky;top:0;z-index:10;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+      padding:8px 10px;background:rgba(18,26,39,.92);border-bottom:1px solid var(--line);backdrop-filter: blur(10px);
+    }
+    .btn{border:0;border-radius:10px;padding:7px 10px;font-weight:900;cursor:pointer}
+    .btn.primary{background:var(--btn);color:#fff}
+    .btn.secondary{background:var(--btn2);color:var(--ink);border:1px solid var(--line)}
+    .hint{color:var(--muted);font-size:12px;line-height:1.35}
+    .tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 8px;margin-left:6px;font-size:11px;color:var(--muted)}
+
+    /* ===== 共通UI ===== */
+    .wrap{max-width:1180px;margin:0 auto;padding:10px 10px 34px}
+    .card{
+      background:rgba(18,26,39,.92);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+    }
+    .headRow{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 0 6px}
+    h1{margin:0;font-size:15px}
+    h2{margin:0 0 6px;font-size:12px;color:var(--muted);font-weight:900}
+    label{display:block;color:var(--muted);font-size:12px;margin:6px 0 4px}
+    input,select{
+      width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--line);
+      background:#0e1522;color:var(--ink);padding:8px 9px;font-size:13px;outline:none;
+    }
+    input:focus,select:focus{border-color:#3b82f6}
+    .row{display:grid;grid-template-columns: 1fr 1fr;gap:8px}
+    .row3{display:grid;grid-template-columns: 1fr 1fr 1fr;gap:8px}
+    .small{color:var(--muted);font-size:12px;line-height:1.5}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .hr{height:1px;background:var(--line);margin:10px 0}
+
+    /* ===== 上段：全体（条件入力／計算書ヘッダ） ===== */
+    .topGrid{
+      display:grid;
+      grid-template-columns: 1.02fr .98fr;
+      gap:10px;
+      align-items:start; /* 上端揃え */
+    }
+
+    /* ===== ケース行：左右ペアで上端揃え ===== */
+    .caseGrid{
+      margin-top:10px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .caseRow{
+      display:grid;
+      grid-template-columns: 1.02fr .98fr;
+      gap:10px;
+      align-items:start; /* ケースごとに上端揃え */
+    }
+
+    /* ===== ケース入力 ===== */
+    .caseTitle{
+      display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 0 4px
+    }
+    .caseTitle b{font-size:13px}
+    .mini{font-size:11px;color:var(--muted)}
+    .caseLeft{display:flex;align-items:center;gap:8px}
+    .ck{
+      display:flex;align-items:center;gap:6px;
+      padding:3px 8px;border:1px solid var(--line);border-radius:999px;background:#0e1522;
+      font-size:12px;color:var(--ink)
+    }
+    .ck input{width:auto;margin:0}
+
+    /* ===== 計算書（右） ===== */
+    .secHead{display:flex;align-items:center;gap:8px;margin:10px 0 6px}
+    .secHead .dot{width:10px;height:10px;border-radius:3px;background:rgba(43,108,255,.6);border:1px solid var(--line)}
+    .secHead b{font-size:13px}
+    .paperBox{
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#0e1522;
+      padding:10px;
+    }
+    .paperBox ul{margin:6px 0 0 18px}
+    .paperBox li{margin:4px 0; line-height:1.55}
+    .chkHeading{font-weight:900;margin:10px 0 6px}
+    .chkHeading .blk{display:inline-block; margin-right:6px}
+    .inputLine{color:var(--muted);font-size:12px;margin:2px 0 6px}
+    .ok{color:#2be3a6;font-weight:900}
+    .ng{color:#ff5b7a;font-weight:900}
+    .compact{margin-top:6px}
+
+    /* ===== トースト ===== */
+    .toast{
+      position:fixed;left:12px;bottom:12px;background:rgba(18,26,39,.96);
+      border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--ink);font-size:12px;
+      display:none;
+    }
+
+    /* ===== 印刷：A4を使い切って中央寄せ＋1列化（左寄り解消） ===== */
+    @media print{
+      @page { size: A4 portrait; margin: 10mm; }
+      body{ background:#fff; color:#000; }
+
+      /* 画面用UIは印刷しない */
+      .bar{ display:none !important; }
+      .inputPane{ display:none !important; } /* 左（入力）を印刷しない */
+      .helpPane{ display:none !important; } /* 説明書は印刷しない */
+
+      /* A4印字可能幅（210-20=190mm）で中央寄せ */
+      .wrap{
+        width: 190mm !important;
+        max-width: 190mm !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+      }
+
+      /* ★重要：2列レイアウトを印刷時は1列化 */
+      .topGrid{ grid-template-columns: 1fr !important; }
+      .caseRow{ grid-template-columns: 1fr !important; }
+
+      /* 計算書側は100%幅 */
+      .reportPane, #reportHeader, [id^="caseResultCard_"]{
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* 見た目（紙用） */
+      .card{ background:#fff; border:0; border-radius:0; padding:0; }
+      .paperBox{ background:#fff; border:1px solid var(--paperLine); }
+      .paperBox li{ color:#000; }
+      .hr{ background:#ddd; }
+      .ok{ color:#0a7; }
+      .ng{ color:#c00; }
+
+      /* ケースがページ途中で割れにくくする */
+      .caseRow{ break-inside: avoid; page-break-inside: avoid; }
+
+      /* タイトル表示制御 */
+      .printOnlyTitle{ display:block !important; }
+      .screenOnlyTitle{ display:none !important; }
+    }
+
+    .printOnlyTitle{display:none}
+    .printOnlyTitle h1{
+      margin:0 0 10px;
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:.02em;
+    }
+
+    /* ---- 説明書（社内用） ---- */
+    .helpPane{ margin-top:16px; }
+    .helpGrid{ display:grid; grid-template-columns: 1fr; gap:10px; }
+    .helpPane h2{ font-size:16px; margin:0 0 6px; }
+    .helpPane h3{ font-size:13px; margin:10px 0 6px; }
+    .helpPane p, .helpPane li{ font-size:12px; }
+    .helpPane code{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; }
+    .helpPane .ref{ font-size:11px; color:var(--muted); }
+    .helpPane .ref a{ color:inherit; }
+    .helpPane .miniBtn{ padding:6px 10px; border-radius:10px; }
+
+  </style>
+</head>
+
+<body>
+  <div class="bar">
+    <button class="btn primary" id="printBtn">印刷（PDF保存）</button>
+    <button class="btn secondary" id="saveJsonBtn">保存（JSON）</button>
+    <button class="btn secondary" id="loadJsonBtn">読込（JSON）</button>
+    <button class="btn secondary" id="resetBtn">リセット</button>
+    <input id="loadFile" type="file" accept="application/json" style="display:none" />
+    <div class="hint">
+      ※提出用PDFは <b>印刷 → PDF保存</b> を使用してください。<span class="tag">自動保存：ON</span>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- 上段（共通条件：左 / 計算書ヘッダ：右） -->
+    <div class="topGrid">
+      <!-- 左：共通条件入力 -->
+      <div class="card inputPane">
+        <div class="headRow">
+          <h1>めり込み検討（柱脚）</h1>
+          <div class="small">入力（共通）</div>
+        </div>
+
+        <h2>検討対象・条件</h2>
+
+        <label>物件名（計算書に出力）</label>
+        <input id="propertyName" type="text" placeholder="例：○○様邸 / △△計画" />
+
+        <div class="row">
+          <div>
+            <label>建物階数（見出し出力用）</label>
+            <select id="floors">
+              <option value="2">木造 2階建て</option>
+              <option value="1">木造 1階建て（平屋）</option>
+            </select>
+          </div>
+          <div>
+            <label>柱・土台断面（mm）</label>
+            <select id="section">
+              <option value="105">105×105</option>
+              <option value="120">120×120</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>欠損（ほぞ穴相当）（幅×深さ mm）</label>
+            <div class="row">
+              <input id="mortiseW" type="number" step="1" min="0" value="30" />
+              <input id="mortiseD" type="number" step="1" min="0" value="90" />
+            </div>
+          </div>
+
+          <div>
+            <label>間柱等加算（面）</label>
+            <select id="addFaces">
+              <option value="0" selected>0面（厚さ30mm相当）</option>
+              <option value="1">1面（厚さ30mm相当）</option>
+              <option value="2">2面（厚さ30mm相当）</option>
+            </select>
+            <div class="small">※厚さは固定30mm扱い。</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>土台材（樹種グループ：添付表1）</label>
+            <select id="species">
+              <option value="c9">針葉樹：あかまつ、くろまつ及びべいまつ（9.0）</option>
+              <option value="c78">針葉樹：からまつ、ひば、ひのき、べいひ及びべいひば（7.8）</option>
+              <option value="c6" selected>針葉樹：つが、べいつが、もみ、えぞまつ、とどまつ、べにまつ、すぎ、べいすぎ及びスプルース（6.0）</option>
+              <option value="h12">広葉樹：かし（12.0）</option>
+              <option value="h108">広葉樹：くり、なら、ぶな及びけやき（10.8）</option>
+            </select>
+          </div>
+          <div>
+            <label>Fcv（N/mm²）</label>
+            <input id="fcv" type="number" step="0.01" min="0" value="6.00" />
+            <div class="small">※選択により自動設定（上書き可）。</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>許容めり込み応力度 係数（デフォルト：短期）</label>
+            <select id="coefMode">
+              <option value="short" selected>短期（2/3）</option>
+              <option value="long">長期（1/3）</option>
+              <option value="custom">任意</option>
+            </select>
+          </div>
+          <div>
+            <label>係数（数値）</label>
+            <input id="coef" type="number" step="0.001" min="0" value="0.6666667" />
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <h2>耐力壁の長さ（m）初期値（モジュール）</h2>
+        <div class="row">
+          <div>
+            <label>モジュール</label>
+            <select id="wallModule">
+              <option value="1.00" selected>1.00 m（1mモジュール）</option>
+              <option value="0.91">0.91 m（910mm）</option>
+            </select>
+          </div>
+          <div>
+            <label>一括設定</label>
+            <button class="btn secondary" id="applyModuleBtn" style="width:100%">全ケースの壁長さをモジュール値に</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="small mono">
+          Q = 1.96×r×L（kN） / N = Q×B×H（kN） / S_N = N+L_N（kN） / σ = (S_N×1000)/A_e（N/mm²） / σ_allow = 係数×Fcv
+        </div>
+      </div>
+
+      <!-- 右：計算書ヘッダ（印刷対象） -->
+      <div class="card reportPane" id="reportHeader">
+        <div class="printOnlyTitle">
+          <h1>柱めり込み検討書</h1>
+        </div>
+
+        <div class="headRow screenOnlyTitle">
+          <h1>柱めり込み検討書</h1>
+          <div class="small">計算書</div>
+        </div>
+
+        <div class="secHead">
+          <span class="dot"></span><b>検討対象・条件</b>
+        </div>
+        <div class="paperBox" id="condBox"></div>
+
+        <div class="secHead" style="margin-top:12px">
+          <span class="dot"></span><b>計算式</b>
+        </div>
+        <div class="paperBox">
+          <ul class="mono compact">
+            <li>Q = 1.96 × r × L（kN）</li>
+            <li>N = Q × B × H（kN）</li>
+            <li>S_N = N + L_N（kN）</li>
+            <li>σ = (S_N × 1000) / A_e（N/mm²）</li>
+            <li>判定：σ ≤ σ_allow</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ケース行（ケースごとに左右上端揃い） -->
+    <div class="caseGrid" id="caseGrid"></div>
+
+    <div class="card helpPane" id="helpPane">
+      <div class="secHead" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="dot"></span><b>説明書（社内用：最新版対応）</b>
+        </div>
+        <button class="btn secondary miniBtn" id="copyHelpBtn" title="この説明書をクリップボードへコピー">説明をコピー</button>
+      </div>
+      <div class="paperBox">
+        <div class="helpGrid">
+
+          <div>
+            <h2>1) このツールの目的</h2>
+            <ul>
+              <li>壁倍率が大きい耐力壁（例：壁倍率7）を採用した際に、壁端部柱（出隅・中柱）の<span class="tag">長期軸力</span>に対して、土台の<span class="tag">柱脚めり込み（圧縮）</span>が許容範囲内かを簡易に確認し、提出用の「柱めり込み検討書」を印刷（PDF保存）できるようにするための社内ツールです。</li>
+              <li>提出用の印刷では右側の計算書のみ出力され、左側の入力欄と本説明書は印刷されません。</li>
+            </ul>
+          </div>
+
+          <div>
+            <h2>2) 使い方（最短手順）</h2>
+            <ol>
+              <li><b>共通条件</b>：物件名／階数（平屋・2階建）／柱・土台断面／めり込み有効幅w・d／めり込み補正（接触面）／土台材（樹種グループ）／Fcv／許容めり込み応力度係数（短期/長期/任意）／壁長さ（モジュール）を入力します。</li>
+              <li><b>検討入力（最大5ケース）</b>：必要なケースに<span class="tag">「使用」</span>チェックを入れ、各壁ごとに「壁倍率 r」「耐力壁の長さ L（m）」「柱位置B（出隅/中柱/任意）」「階高さH」「長期軸力L_N」を入力します。</li>
+              <li><b>印刷（PDF保存）</b>：上部の「印刷（PDF保存）」をクリックし、ブラウザの印刷ダイアログでPDF保存します（A4中央寄せで出力）。</li>
+              <li><b>保存/読込</b>：案件ごとにJSONで保存・読込できます（入力は自動保存もされます）。</li>
+            </ol>
+          </div>
+
+          <div>
+            <h2>3) 入力値の意味（要点）</h2>
+            <ul>
+              <li><b>壁倍率 r</b>：当該耐力壁の壁倍率（例：7.00）。</li>
+              <li><b>耐力壁の長さ L（m）</b>：当該耐力壁の有効長さ（m）。<b>1.00mモジュール</b>なら1.00、<b>910mmモジュール</b>なら0.91等を入力します（本ツールでは「壁長さ（モジュール）」でデフォルトを一括設定できます）。</li>
+              <li><b>柱位置 B</b>：めり込み検討に用いる係数（出隅=0.8、中柱=0.5、任意も可）。</li>
+              <li><b>階高さ H（m）</b>：当該階の階高。筋かい等の壁倍率には階高による低減規定があり得るため、計画値をそのまま入れます（本ツールのめり込み計算はHも使います）。</li>
+              <li><b>長期軸力 L_N（kN）</b>：鉛直荷重（長期）。デフォルトは10kNです（必要に応じて案件値に更新）。</li>
+            </ul>
+          </div>
+
+          <div>
+            <h2>4) 「1.96」と壁長さL（壁幅）の関係</h2>
+            <p>本ツールの壁由来せん断力（短期）<b>Q</b>は、入力の壁倍率<b>r</b>と壁長さ<b>L</b>から次で算定しています：</p>
+            <ul>
+              <li><b>Q = 1.96 × r × L（kN）</b></li>
+            </ul>
+            <p>ここで<span class="tag">1.96（kN/m）</span>は、壁倍率1.0の壁が<span class="tag">壁長さ1mあたり</span>に負担できる耐力（基準）として扱われ、国土交通省の壁量基準見直し資料でも「壁の耐力（1.96kN/m）」として用いられています。<span class="tag">Lが1.00m→0.91m</span>になると、Qは比例して<b>0.91倍</b>になります（＝壁幅が短いほど、壁の負担せん断力が小さくなる）。</p>
+
+            <h3>計算例（壁倍率7）</h3>
+            <ul>
+              <li>1.00mモジュール：Q = 1.96 × 7 × 1.00 = <b>13.72kN</b></li>
+              <li>0.91mモジュール：Q = 1.96 × 7 × 0.91 = <b>12.49kN</b></li>
+            </ul>
+
+            <h3>実務メモ</h3>
+            <ul>
+              <li>本ツールでは、壁長さLをケースごとに入力できます（＝壁幅0.91mの壁が混在する計画にも対応可能）。</li>
+              <li>「壁長さ（モジュール）」はあくまで初期値の一括設定です。実際の壁長さが異なる場合は、各ケースのLを上書きしてください。</li>
+            </ul>
+          </div>
+
+          <div>
+            <h2>5) 出典（本説明の根拠）</h2>
+            <ul>
+              <li class="ref">国土交通省「木造建築物における省エネ化等による建築物の重量化に対応…（壁量基準の見直し関連）」(2024-07-08 公表) — 「壁の耐力（1.96kN/m）」(p.10)／算定式中の 0.0196・Co=0.2 の整理 (p.11)
+                <br><a href="https://www.mlit.go.jp/jutakukentiku/build/content/001753667.pdf" target="_blank" rel="noopener">https://www.mlit.go.jp/jutakukentiku/build/content/001753667.pdf</a></li>
+              <li class="ref">日本合板工業組合連合会 FAQ（告示仕様の耐力壁に関する「壁基準耐力」）— 「[壁倍率×1.96]kN/m」の整理（一次情報は「木造住宅の耐震診断と補強方法（日本建築防災協会）」に基づく旨）※参照日 2026-02-01
+                <br><a href="https://www.jpma.jp/product/faq.html" target="_blank" rel="noopener">https://www.jpma.jp/product/faq.html</a></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast">保存しました</div>
+
+  <script>
+    const CASE_MAX = 5;
+    const el = (id)=>document.getElementById(id);
+    const toast = el('toast');
+
+    const SPECIES = {
+      c9:  { kind:"針葉樹", name:"あかまつ、くろまつ及びべいまつ", fcv:9.0 },
+      c78: { kind:"針葉樹", name:"からまつ、ひば、ひのき、べいひ及びべいひば", fcv:7.8 },
+      c6:  { kind:"針葉樹", name:"つが、べいつが、もみ、えぞまつ、とどまつ、べにまつ、すぎ、べいすぎ及びスプルース", fcv:6.0 },
+      h12: { kind:"広葉樹", name:"かし", fcv:12.0 },
+      h108:{ kind:"広葉樹", name:"くり、なら、ぶな及びけやき", fcv:10.8 }
+    };
+    const CIRCLED = ["①","②","③","④","⑤"];
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(()=>toast.style.display='none', 1100);
+    }
+    function fmt(n, d=2){ if(!isFinite(n)) return "-"; return Number(n).toFixed(d); }
+    function fmtInt(n){ if(!isFinite(n)) return "-"; return String(Math.round(n)); }
+    function nowJP(){
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mi = String(d.getMinutes()).padStart(2,'0');
+      const ss = String(d.getSeconds()).padStart(2,'0');
+      return `${yyyy}/${mm}/${dd} ${hh}:${mi}:${ss}`;
+    }
+
+    // 長期軸力 L_N の入力補助：負担面積×上部構造荷重（目安値 w）→ L_N
+    function updateLnHint(i){
+      const hint = el(`case_ln_hint_${i}`);
+      if(!hint) return;
+      const area = Number(el(`case_area_${i}`)?.value || 0);
+      const wRaw = el(`case_w_${i}`)?.value ?? "";
+      const w = Number(wRaw || 0);
+      const val = area * w;
+      if(area > 0 && w > 0 && isFinite(val)){
+        hint.textContent = `参考：L_N = 負担面積${fmt(area,2)} m² × w${fmt(w,1)} kN/m² = ${fmt(val,2)} kN（出典：『小規模建築物基礎設計指針』表4.1.2 + P=1.3 kN/m²（柱・基礎計算用）／注：1階床荷重および基礎自重は含まず）`;
+      }else{
+        hint.textContent = `参考：該当柱の負担面積（m²）× 上部構造荷重 w（kN/m²：『小規模建築物基礎設計指針』表4.1.2 + P=1.3 kN/m²（柱・基礎計算用）を加算）で L_N を算定できます。`;
+      }
+    }
+
+
+    function syncCoef(){
+      const mode = el('coefMode').value;
+      if(mode === 'short'){
+        el('coef').value = 2/3;
+        el('coef').disabled = true;
+      }else if(mode === 'long'){
+        el('coef').value = 1/3;
+        el('coef').disabled = true;
+      }else{
+        el('coef').disabled = false;
+      }
+    }
+
+    function syncFcv(){
+      const key = el('species').value;
+      const v = SPECIES[key]?.fcv ?? 6.0;
+      el('fcv').value = Number(v).toFixed(2);
+    }
+
+    function calcAe(){
+      const sec = Number(el('section').value);
+      const mortiseW = Number(el('mortiseW').value || 0);
+      const mortiseD = Number(el('mortiseD').value || 0);
+      const faces = Number(el('addFaces').value || 0);
+      const t = 30;
+      const baseArea = sec * sec;
+      const mortiseArea = Math.max(0, mortiseW) * Math.max(0, mortiseD);
+      const addArea = Math.max(0, faces) * sec * t;
+
+      let ae = baseArea - mortiseArea + addArea;
+      if(!isFinite(ae) || ae < 1) ae = 1;
+      return { ae, faces, t, sec, mortiseW, mortiseD };
+    }
+
+    function calcAllow(){
+      const fcv = Number(el('fcv').value || 0);
+      const coef = Number(el('coef').value || 0);
+      let allow = coef * fcv;
+      if(!isFinite(allow) || allow < 0) allow = 0;
+      return { allow, fcv, coef };
+    }
+
+    function buildCaseRows(){
+      const wrap = el('caseGrid');
+      wrap.innerHTML = '';
+
+      const defL = Number(el('wallModule')?.value || 1.00);
+
+      for(let i=1;i<=CASE_MAX;i++){
+        const row = document.createElement('div');
+        row.className = 'caseRow';
+        row.innerHTML = `
+          <div class="card inputPane" id="caseInputCard_${i}">
+            <div class="caseTitle">
+              <div class="caseLeft">
+                <span class="ck">
+                  <input id="case_on_${i}" type="checkbox" ${i===1 ? 'checked' : ''} />
+                  <span>使用</span>
+                </span>
+                <b>ケース ${i}</b>
+              </div>
+              <span class="mini">ONのケースのみ計算・印刷に出力</span>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>階</label>
+                <select id="case_floor_${i}">
+                  <option value="1" selected>1階</option>
+                  <option value="2">2階</option>
+                </select>
+              </div>
+              <div>
+                <label>検討名</label>
+                <input id="case_name_${i}" type="text" placeholder="例：わ/1（複数は , 区切り）" />
+              </div>
+            </div>
+
+            <div class="row3">
+              <div>
+                <label>壁倍率 r</label>
+                <input id="case_r_${i}" type="number" step="0.01" min="0" value="${i===1 ? 7.00 : 0}" />
+              </div>
+              <div>
+                <label>耐力壁の長さ L（m）</label>
+                <input id="case_L_${i}" type="number" step="0.01" min="0" value="${defL.toFixed(2)}" />
+              </div>
+              <div>
+                <label>柱位置（B）</label>
+                <select id="case_pos_${i}">
+                  <option value="0.8">出隅（B=0.8）</option>
+                  <option value="0.5" selected>中柱（B=0.5）</option>
+                  <option value="custom">任意</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row3">
+              <div>
+                <label>B（数値）</label>
+                <input id="case_b_${i}" type="number" step="0.01" min="0" value="0.5" />
+              </div>
+              <div>
+                <label>階高さ H（m）</label>
+                <input id="case_h_${i}" type="number" step="0.01" min="0" value="2.73" />
+              </div>
+              
+              <div>
+                <label>長期軸力 L_N（kN）</label>
+                <input id="case_ln_${i}" type="number" step="0.01" min="0" value="10" />
+                <input id="case_ln_src_${i}" type="hidden" value="manual" />
+                <div class="small" style="margin-top:6px">
+                  <div class="row" style="grid-template-columns: 1fr 1fr; gap:6px">
+                    <div>
+                      <label style="margin:0 0 4px">該当柱の負担面積（m²）</label>
+                      <input id="case_area_${i}" type="number" step="0.01" min="0" placeholder="例：2.00" />
+                    </div>
+                    <div>
+                      <label style="margin:0 0 4px">上部構造荷重 w（kN/m²）（P=1.3加算済）</label>
+                      <select id="case_w_${i}">
+                        <option value="" selected>（選択）</option>
+                        <option value="5.3">5.3（=4.0+P1.3）：一般地域の平屋</option>
+                        <option value="8.3">8.3（=7.0+P1.3）：一般地域の2階建／多雪区域（積雪100cm）の平屋</option>
+                        <option value="11.3">11.3（=10.0+P1.3）：一般地域の3階建／多雪区域の2階建</option>
+                        <option value="13.8">13.8（=12.5+P1.3）：多雪区域の3階建</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button class="btn secondary" id="case_ln_calc_${i}" type="button" style="width:100%; margin-top:6px">
+                    負担面積×w（P=1.3加算済）で L_N に反映
+                  </button>
+                  <div class="mini mono" id="case_ln_hint_${i}" style="margin-top:6px"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>備考</label>
+                <input id="case_note_${i}" type="text" placeholder="任意" />
+              </div>
+              <div>
+                <label>（空欄）</label>
+                <input type="text" disabled value="" />
+              </div>
+            </div>
+          </div>
+
+          <div class="card reportPane" id="caseResultCard_${i}">
+            <div id="caseResult_${i}"></div>
+          </div>
+        `;
+        wrap.appendChild(row);
+
+        const posSel = el(`case_pos_${i}`);
+        const bInp  = el(`case_b_${i}`);
+        posSel.addEventListener('change', ()=>{
+          const v = posSel.value;
+          if(v === 'custom'){
+            bInp.disabled = false; bInp.focus();
+          }else{
+            bInp.disabled = false; bInp.value = v;
+          }
+          recalcAll(); autosave();
+        });
+
+        // L_N を手入力した場合は「手入力」に戻す（計算書の注記制御）
+        const lnInp = el(`case_ln_${i}`);
+        const lnSrcInp = el(`case_ln_src_${i}`);
+        if(lnInp && lnSrcInp){
+          lnInp.addEventListener('input', ()=>{ lnSrcInp.value = 'manual'; });
+          lnInp.addEventListener('change', ()=>{ lnSrcInp.value = 'manual'; });
+        }
+
+        // 負担面積・wを変更した場合は、再反映前は「手入力」扱いに戻す（印刷注記の整合）
+        const areaInp = el(`case_area_${i}`);
+        const wSel = el(`case_w_${i}`);
+        if(lnSrcInp){
+          if(areaInp) areaInp.addEventListener('input', ()=>{ lnSrcInp.value = 'manual'; });
+          if(wSel) wSel.addEventListener('change', ()=>{ lnSrcInp.value = 'manual'; });
+        }
+
+        // L_N 入力補助（負担面積×上部構造荷重 w）
+        const calcBtn = el(`case_ln_calc_${i}`);
+        if(calcBtn){
+          calcBtn.addEventListener('click', ()=>{
+            const area = Number(el(`case_area_${i}`).value || 0);
+            const w = Number(el(`case_w_${i}`).value || 0);
+            const val = area * w; // kN
+            if(!(area > 0) || !(w > 0) || !isFinite(val)){
+              alert('負担面積（m²）と上部構造荷重 w（kN/m²）（P=1.3加算済）を入力してください。');
+              return;
+            }
+            el(`case_ln_src_${i}`).value = 'area_w';
+            el(`case_ln_${i}`).value = fmt(val, 2);
+            updateLnHint(i);
+            recalcAll(); autosave();
+            showToast('L_N を反映しました');
+          });
+        }
+
+        row.querySelectorAll('input,select').forEach(inp=>{
+          inp.addEventListener('input', ()=>{ recalcAll(); autosave(); });
+          inp.addEventListener('change', ()=>{ recalcAll(); autosave(); });
+        });
+      }
+    }
+
+    function enforceFloorUI(){
+      const is2 = el('floors').value === "2";
+      for(let i=1;i<=CASE_MAX;i++){
+        const sel = el(`case_floor_${i}`);
+        const opt2 = sel.querySelector('option[value="2"]');
+        if(opt2){
+          opt2.disabled = !is2;
+          if(!is2) sel.value = "1";
+        }
+      }
+    }
+
+    function isCaseEmpty(i){
+      const name = (el(`case_name_${i}`).value||"").trim();
+      const note = (el(`case_note_${i}`).value||"").trim();
+      const r  = Number(el(`case_r_${i}`).value||0);
+      const L  = Number(el(`case_L_${i}`).value||0);
+      const b  = Number(el(`case_b_${i}`).value||0);
+      const h  = Number(el(`case_h_${i}`).value||0);
+      const ln = Number(el(`case_ln_${i}`).value||0);
+      return (name==="" && note==="" && r===0 && L===0 && b===0 && h===0 && ln===0);
+    }
+    function isCaseEnabled(i){ return !!el(`case_on_${i}`).checked; }
+
+    function renderConditions(){
+      const dt = nowJP();
+      const floorsText = el('floors').value === "2" ? "木造 2階建て" : "木造 1階建て";
+      const sec = Number(el('section').value);
+      const { ae, faces, t } = calcAe();
+      const { allow, fcv, coef } = calcAllow();
+      const sp = SPECIES[el('species').value] || SPECIES.c6;
+
+      const cond = document.createElement('div');
+      cond.innerHTML = `
+        <div class="small"><b>作成日時：</b>${dt}</div>
+        <ul class="compact">
+          <li>物件名：${(el('propertyName').value||"").trim() || "-"}</li>
+          <li>建物階数：${floorsText}</li>
+          <li>柱・土台断面：${sec}×${sec} mm</li>
+          <li>欠損（ほぞ穴相当）：${Number(el('mortiseW').value||0)}×${Number(el('mortiseD').value||0)} mm</li>
+          <li>間柱等加算：${faces}面（厚さ${t}mm相当）</li>
+          <li>土台材：${sp.kind}：${sp.name}（Fcv=${fmt(fcv,1)} N/mm²）</li>
+          <li>許容めり込み応力度：σ_allow = ${fmt(coef,3)}×Fcv = ${fmt(allow,2)} N/mm²</li>
+          <li>有効接触面積：A_e = ${fmtInt(ae)} mm²</li>
+        </ul>
+      `;
+      const box = el('condBox');
+      box.innerHTML = '';
+      box.appendChild(cond);
+    }
+
+    function renderCaseResult(i){
+      const host = el(`caseResult_${i}`);
+      const { ae } = calcAe();
+      const { allow } = calcAllow();
+
+      if(!isCaseEnabled(i)){
+        host.innerHTML = `<div class="small">※ケース${i}は「使用」OFFのため、計算・印刷出力しません。</div>`;
+        return;
+      }
+      if(isCaseEmpty(i)){
+        host.innerHTML = `<div class="small">※ケース${i}：入力が空です（必要なら入力してください）。</div>`;
+        return;
+      }
+
+      const floor = el(`case_floor_${i}`).value === "2" ? "2階" : "1階";
+      if(el('floors').value === "1" && floor === "2階"){
+        el(`case_floor_${i}`).value = "1";
+      }
+
+      const name = (el(`case_name_${i}`).value||"").trim() || `（名称未入力）`;
+      const r  = Number(el(`case_r_${i}`).value||0);
+      const L  = Number(el(`case_L_${i}`).value||0);
+      const b  = Number(el(`case_b_${i}`).value||0);
+      const h  = Number(el(`case_h_${i}`).value||0);
+      const ln = Number(el(`case_ln_${i}`).value||0);
+      const lnSrc = (el(`case_ln_src_${i}`)?.value || 'manual');
+      const area = Number(el(`case_area_${i}`)?.value || 0);
+      const w = Number(el(`case_w_${i}`)?.value || 0);
+      const lnFromAreaW = area * w;
+      const lnNote = (lnSrc === 'area_w' && area > 0 && w > 0 && isFinite(lnFromAreaW))
+        ? `【L_N算定】負担面積${fmt(area,2)} m² × 上部構造荷重 w${fmt(w,1)} kN/m²（出典：『小規模建築物基礎設計指針』表4.1.2 + P=1.3 kN/m²（柱・基礎計算用）） = ${fmt(lnFromAreaW,2)} kN → L_N入力=${fmt(ln,2)} kN<br>※w は『小規模建築物基礎設計指針』表4.1.2の目安値に P=1.3 kN/m²（柱・基礎計算用）を加算したもの（注：1階床荷重および基礎自重は含まず）`
+        : '';
+      const note = (el(`case_note_${i}`).value||"").trim();
+
+      const Q  = 1.96 * r * L;     // kN
+      const N  = Q * b * h;        // kN
+      const SN = N + ln;           // kN
+      const sigma = (SN * 1000) / ae; // N/mm²
+      const Areq = (allow>0) ? (SN * 1000) / allow : Infinity;
+      const ok = (allow > 0) && (sigma <= allow);
+
+      host.innerHTML = `
+        <div class="chkHeading"><span class="blk">■</span>検討${CIRCLED[i-1] || i} ${floor} ${name}</div>
+        <div class="paperBox">
+          <div class="inputLine mono">入力：r=${fmt(r,2)}　L=${fmt(L,2)} m　B=${fmt(b,2)}　H=${fmt(h,2)} m　L_N=${fmt(ln,2)} kN</div>
+          ${lnNote ? `<div class="inputLine mono">${lnNote}</div>` : ``}
+          <ul class="mono compact">
+            <li>Q = 1.96×${fmt(r,2)}×${fmt(L,2)} = ${fmt(Q,2)} kN</li>
+            <li>N = Q×B×H = ${fmt(Q,2)}×${fmt(b,2)}×${fmt(h,2)} = ${fmt(N,2)} kN</li>
+            <li>S_N = N + L_N = ${fmt(SN,2)} kN</li>
+            <li>A_e = ${fmtInt(ae)} mm²　σ_allow=${fmt(allow,2)} N/mm²</li>
+            <li>σ = (S_N×1000)/A_e = ${fmt(sigma,2)} N/mm²</li>
+            <li>必要面積 A_req = (S_N×1000)/σ_allow = ${isFinite(Areq) ? (fmtInt(Areq) + " mm²") : "-"}</li>
+            <li style="font-weight:900">判定：${ok ? '<span class="ok">OK</span>' : '<span class="ng">NG</span>'}</li>
+            ${note ? `<li>備考：${note}</li>` : ``}
+          </ul>
+        </div>
+      `;
+    }
+
+    function recalcAll(){
+      renderConditions();
+      enforceFloorUI();
+      for(let i=1;i<=CASE_MAX;i++){
+        renderCaseResult(i);
+        updateLnHint(i);
+      }
+    }
+
+    const LS_KEY = 'merikomi_calc_v5';
+
+    function collectData(){
+      const data = {
+        propertyName: el('propertyName').value || '',
+        floors: el('floors').value,
+        section: el('section').value,
+        mortiseW: el('mortiseW').value,
+        mortiseD: el('mortiseD').value,
+        addFaces: el('addFaces').value,
+        species: el('species').value,
+        fcv: el('fcv').value,
+        coefMode: el('coefMode').value,
+        coef: el('coef').value,
+        wallModule: el('wallModule').value,
+        cases: []
+      };
+      for(let i=1;i<=CASE_MAX;i++){
+        data.cases.push({
+          on: el(`case_on_${i}`).checked,
+          floor: el(`case_floor_${i}`).value,
+          name: el(`case_name_${i}`).value || '',
+          r: el(`case_r_${i}`).value,
+          L: el(`case_L_${i}`).value,
+          pos: el(`case_pos_${i}`).value,
+          b: el(`case_b_${i}`).value,
+          h: el(`case_h_${i}`).value,
+          ln: el(`case_ln_${i}`).value,
+          lnSrc: el(`case_ln_src_${i}`)?.value ?? 'manual',
+          area: el(`case_area_${i}`)?.value ?? '',
+          w: el(`case_w_${i}`)?.value ?? '',
+          note: el(`case_note_${i}`).value || ''
+        });
+      }
+      return data;
+    }
+
+    function applyData(data){
+      if(!data) return;
+
+      el('propertyName').value = data.propertyName ?? '';
+      el('floors').value = data.floors ?? '2';
+      el('section').value = data.section ?? '105';
+      el('mortiseW').value = data.mortiseW ?? 30;
+      el('mortiseD').value = data.mortiseD ?? 90;
+      el('addFaces').value = data.addFaces ?? '0';
+
+      el('species').value = data.species ?? 'c6';
+      el('fcv').value = data.fcv ?? (SPECIES[el('species').value]?.fcv ?? 6.0);
+
+      el('coefMode').value = data.coefMode ?? 'short';
+      syncCoef();
+      el('coef').value = data.coef ?? (2/3);
+
+      el('wallModule').value = data.wallModule ?? '1.00';
+
+      (data.cases || []).slice(0,CASE_MAX).forEach((c, idx)=>{
+        const i = idx+1;
+        el(`case_on_${i}`).checked = (c.on ?? (i===1));
+        el(`case_floor_${i}`).value = c.floor ?? "1";
+        el(`case_name_${i}`).value = c.name ?? '';
+        el(`case_r_${i}`).value = c.r ?? 0;
+        el(`case_L_${i}`).value = c.L ?? Number(el('wallModule').value || 1.00).toFixed(2);
+        el(`case_pos_${i}`).value = c.pos ?? '0.5';
+        el(`case_b_${i}`).value = c.b ?? 0.5;
+        el(`case_h_${i}`).value = c.h ?? 2.73;
+        el(`case_ln_${i}`).value = (c.ln ?? 10);
+        if(el(`case_ln_src_${i}`)) el(`case_ln_src_${i}`).value = (c.lnSrc ?? 'manual');
+        if(el(`case_area_${i}`)) el(`case_area_${i}`).value = (c.area ?? '');
+        if(el(`case_w_${i}`)) el(`case_w_${i}`).value = (c.w ?? '');
+        el(`case_note_${i}`).value = c.note ?? '';
+      });
+
+      enforceFloorUI();
+      recalcAll();
+    }
+
+    function autosave(){
+      try{ localStorage.setItem(LS_KEY, JSON.stringify(collectData())); }catch(e){}
+    }
+    function autoload(){
+      try{
+        const raw = localStorage.getItem(LS_KEY);
+        if(!raw) return;
+        applyData(JSON.parse(raw));
+      }catch(e){}
+    }
+
+    function downloadJson(){
+      const data = collectData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const name = (el('propertyName').value || 'merikomi_calc').replace(/[\\\/:*?"<>|]/g,'_');
+      a.href = url;
+      a.download = `${name}_merikomi_calc.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('保存しました（JSON）');
+    }
+
+    function resetAll(){
+      localStorage.removeItem(LS_KEY);
+      location.reload();
+    }
+
+    function applyModuleToAll(){
+      const v = Number(el('wallModule').value || 1.00).toFixed(2);
+      for(let i=1;i<=CASE_MAX;i++){
+        el(`case_L_${i}`).value = v;
+      }
+      recalcAll(); autosave();
+      showToast('壁長さを一括設定しました');
+    }
+
+    function bindEvents(){
+      el('printBtn').addEventListener('click', ()=> window.print());
+
+      const copyBtn = document.getElementById('copyHelpBtn');
+      if(copyBtn){
+        copyBtn.addEventListener('click', async ()=>{
+          try{
+            const txt = document.getElementById('helpPane')?.innerText || '';
+            await navigator.clipboard.writeText(txt.trim());
+            showToast('説明をコピーしました');
+          }catch(e){
+            alert('コピーに失敗しました。ブラウザの権限をご確認ください。');
+          }
+        });
+      }
+
+      el('saveJsonBtn').addEventListener('click', downloadJson);
+      el('loadJsonBtn').addEventListener('click', ()=> el('loadFile').click());
+      el('loadFile').addEventListener('change', async (ev)=>{
+        const file = ev.target.files?.[0];
+        if(!file) return;
+        const text = await file.text();
+        try{
+          applyData(JSON.parse(text));
+          autosave();
+          showToast('読込しました（JSON）');
+        }catch(e){
+          alert('JSONの形式が不正です。');
+        }finally{
+          ev.target.value = '';
+        }
+      });
+
+      el('resetBtn').addEventListener('click', ()=>{
+        if(confirm('入力を全てリセットします。よろしいですか？')){
+          resetAll();
+        }
+      });
+
+      el('applyModuleBtn').addEventListener('click', (e)=>{
+        e.preventDefault();
+        applyModuleToAll();
+      });
+
+      ['propertyName','floors','section','mortiseW','mortiseD','addFaces','species','fcv','coefMode','coef','wallModule']
+        .forEach(id=>{
+          el(id).addEventListener('input', ()=>{ recalcAll(); autosave(); });
+          el(id).addEventListener('change', ()=>{
+            if(id==='species') syncFcv();
+            if(id==='coefMode') syncCoef();
+            recalcAll(); autosave();
+          });
+        });
+    }
+
+    (function init(){
+      el('coefMode').value = 'short';
+      syncCoef();
+      syncFcv();
+      buildCaseRows();
+      autoload();
+      enforceFloorUI();
+      recalcAll();
+      bindEvents();
+      autosave();
+    })();
+  </script>
+</body>
+</html>

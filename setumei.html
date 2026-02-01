@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>7倍壁（壁倍率>5）対応まとめ（社内用）</title>
+  <style>
+    :root{
+      --bg:#0b0f17; --card:#121a27; --text:#e7eefc; --muted:#9fb0cf; --line:#23314a;
+      --btn:#2b6cff; --btn2:#1b2a43;
+    }
+    body{margin:0;background:linear-gradient(180deg,#0b0f17,#070a10);color:var(--text);
+      font-family:system-ui,-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;}
+    .bar{
+      position:sticky;top:0;z-index:10;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+      padding:10px 12px;background:rgba(18,26,39,.92);border-bottom:1px solid var(--line);backdrop-filter: blur(10px);
+    }
+    .btn{border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
+    .btn.primary{background:var(--btn);color:#fff}
+    .btn.secondary{background:var(--btn2);color:var(--text);border:1px solid var(--line)}
+    .hint{color:var(--muted);font-size:12px;line-height:1.4}
+    .wrap{max-width:1040px;margin:0 auto;padding:14px 14px 48px}
+    .card{
+      background:rgba(18,26,39,.92);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0;
+    }
+    h1{margin:0 0 8px;font-size:18px;letter-spacing:.02em}
+    h2{margin:0 0 8px;font-size:14px}
+    h3{margin:12px 0 6px;font-size:13px}
+    p,li{color:var(--text);font-size:13px;line-height:1.75}
+    ul{margin:6px 0 0 18px}
+    .small{color:var(--muted);font-size:12px;line-height:1.6}
+    .pill{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid var(--line);font-size:11px;color:var(--muted)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    a{color:#9cc2ff}
+    code{background:#0e1522;border:1px solid var(--line);padding:1px 6px;border-radius:8px}
+    .hr{height:1px;background:var(--line);margin:10px 0}
+    .toast{
+      position:fixed;left:12px;bottom:12px;background:rgba(18,26,39,.96);
+      border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--text);font-size:12px;
+      display:none;
+    }
+    .muted{color:var(--muted)}
+    .note{background:#0e1522;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
+    .tablewrap{overflow-x:auto;margin:8px 0}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{border:1px solid var(--line);padding:6px 8px;vertical-align:top}
+    th{background:#0e1522}
+    td.r{text-align:right}
+    @media print{
+      .bar{display:none}
+      body{background:#fff;color:#000}
+      .card{background:#fff;border:1px solid #ddd}
+      a{color:#06c}
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 上部バー（左上にコピー） -->
+  <div class="bar">
+    <button class="btn primary" id="copyHtmlBtn">コピー（HTML本文）</button>
+    <button class="btn secondary" id="copyTextBtn">コピー（テキスト）</button>
+    <button class="btn secondary" id="printBtn">印刷</button>
+    <div class="hint">左上ボタンで本文をコピーできます（社内チャット・社内Wiki貼り付け用）。</div>
+  </div>
+
+  <div class="wrap">
+    <div class="card" id="content">
+      <h1>7倍壁（壁倍率&gt;5）対応まとめ（社内用）</h1>
+      <p class="small">
+        対象：2025年4月以降の運用で、壁倍率7クラス（壁倍率&gt;5）の耐力壁を採用する案件。<br>
+        前提：<span class="pill">N値計算は実施</span>／<span class="pill">適合する認定金物を採用</span>
+      </p>
+
+      <div class="hr"></div>
+
+      <h2>1. merikomi_calc.html の使用方法（めり込み検討 自動計算→印刷（PDF保存））</h2>
+
+      <h3>1) 事前準備</h3>
+      <ul>
+        <li><code>merikomi_calc.html</code> をPCに保存し、ブラウザ（Chrome推奨）で開きます。</li>
+        <li>CDN（jsPDF）がブロックされる場合は、PDF出力ではなく「印刷 → PDF保存」を使います。</li>
+      </ul>
+
+      <h3>2) 前提条件（上段）</h3>
+      <ul>
+        <li>建物階数：<code>2階建て</code> / <code>1階建て（平屋）</code>（見出し出力用）</li>
+        <li>柱・土台断面：<code>105×105</code> / <code>120×120</code>（mm）</li>
+        <li>ほぞ欠損：既定 <code>30×90</code>（mm）</li>
+        <li>土台材（Fcv）：樹種グループから選択（必要なら手入力で上書き）</li>
+        <li>許容めり込み応力度の係数：既定 <code>短期＝(2/3)×Fcv</code></li>
+        <li>有効接触面積 <code>A_e</code>（mm²）が自動表示（断面−欠損±加算）</li>
+      </ul>
+
+
+      <p class="note">
+        <b>土台材（Fcv）の選択（添付資料「表1」）</b><br>
+        土台材の「基準強度（Fcv）」は、入力画面で <u>樹種グループ</u> から選択します（必要に応じて数値を手入力で上書き可）。<br>
+        下表は添付資料「表1」の転記です（単位：N/mm²）。
+      </p>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th style="width:18%">区分</th><th>樹種（グループ）</th><th style="width:18%">基準強度 Fcv</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>針葉樹</td><td>あかまつ、くろまつ及びべいまつ</td><td class="r">9.0</td></tr>
+            <tr><td>針葉樹</td><td>からまつ、ひば、ひのき、べいひ及びべいひば</td><td class="r">7.8</td></tr>
+            <tr><td>針葉樹</td><td>つが、べいつが、もみ、えぞまつ、とどまつ、べにまつ、すぎ、べいすぎ及びスプルース</td><td class="r">6.0</td></tr>
+            <tr><td>広葉樹</td><td>かし</td><td class="r">12.0</td></tr>
+            <tr><td>広葉樹</td><td>くり、なら、ぶな及びけやき</td><td class="r">10.8</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+
+      <h3>3) 壁ごとの入力（最大5ケース）</h3>
+      <ul>
+        <li>ケース選択：ケース1〜5のチェックをONにしたものだけ、計算・印刷に反映されます。</li>
+        <li>検討名（任意）：各ケースの名前（例：南面外周 7倍壁）</li>
+        <li>壁倍率 <code>r</code>（例：7.0）</li>
+        <li>耐力壁の長さ（壁幅）<code>L</code>（m）<span class="small">※1.00m（1mモジュール）/ 0.91m（910モジュール）等。壁倍率→力への換算に影響します。</span></li>
+        <li>柱位置（係数B）：出隅 <code>0.8</code> / 中柱 <code>0.5</code>（必要なら任意Bも可）</li>
+        <li>階高さ <code>H</code>（m）</li>
+        <li>長期軸力 <code>L_N</code>（kN）<span class="small">※既定値：10kN（必要に応じて変更）</span></li>
+        <li><b>【最新版追記】</b> 長期軸力 <code>L_N</code> は、該当柱の負担面積（m²）と上部構造荷重 <code>w</code>（kN/m²）から <code>L_N = 負担面積×w</code>（kN）として算定し、「負担面積×w（P=1.3加算済）で L_N に反映」で入力欄へ反映できます。（該当の柱を柱負担面積で算出した値を入力【c014】<br>
+  <span class="small">※上部構造荷重 <code>w</code> の目安値は「小規模建築物基礎設計指針」表4.1.2（上部構造荷重の目安値／建築面積あたり）を根拠として使用します。<br>
+  ※本ツールの <code>w</code> は、同表の <code>w</code> に <b>P=1.3 kN/m²（柱・基礎計算用）</b> を加算した値（<b>w+P</b>）を選択肢として用います。<br>
+  ツールでこの方法を用いた場合、印刷される計算書に算定式と出典が自動で明記されます（手入力の場合は明記しません）。<br>
+  <div class="tablewrap" style="margin-top:8px">
+    <table>
+      <thead>
+        <tr><th style="width:40%">表4.1.2の w（kN/m²）</th><th style="width:60%">w + P（P=1.3 kN/m²）</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="r">4.0</td><td class="r">5.3</td></tr>
+        <tr><td class="r">7.0</td><td class="r">8.3</td></tr>
+        <tr><td class="r">10.0</td><td class="r">11.3</td></tr>
+        <tr><td class="r">12.5</td><td class="r">13.8</td></tr>
+      </tbody>
+    </table>
+  </div></span></li>
+        <li>備考（任意）</li>
+      </ul>
+
+      <h3>4) 計算式（画面右の結果と同じ）</h3>
+
+      <p class="note">
+        <b>追記（重要）：1.96 と「壁の長さ L」の関係</b><br>
+        壁倍率 <code>r</code> は「壁長 <code>L</code>(m) あたりの耐力」を表すため、<code>1.96</code> は <u>倍率=1を算定するための基準値（kN/m）</u> として扱われます。<br>
+        よって <b>壁長 <code>L</code> が 1.00m でない場合</b>（例：0.91m）には、結果が比例して変化します。出典は <a href="#src4">[4]</a>（JTCCM 業務方法書）です。
+      </p>
+
+      <ul class="mono">
+        <li><span class="muted">（参考：L=1.00m の場合の簡略式）</span> N = 1.96 × r × B × H（kN）</li>
+        <li><b>【最新】</b> Q = 1.96 × r × L（kN）</li>
+        <li><b>【最新】</b> N = Q × B × H（kN） = 1.96 × r × L × B × H（kN）</li>
+        <li>S_N = N + L_N（kN）</li>
+        <li>σ = (S_N×1000) / A_e（N/mm²）</li>
+        <li>σ_allow = 係数 × Fcv（N/mm²）</li>
+        <li>判定：σ ≤ σ_allow → OK</li>
+      </ul>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th style="width:22%">例（壁倍率 r）</th><th style="width:18%">壁長 L (m)</th><th style="width:18%">Q=1.96×r×L (kN)</th><th>ポイント</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>r=7.0</td><td class="r">1.00</td><td class="r">13.72</td>
+              <td>1mモジュール想定。旧説明の「N=1.96×r×B×H」はこの場合に一致します。</td>
+            </tr>
+            <tr>
+              <td>r=7.0</td><td class="r">0.91</td><td class="r">12.49</td>
+              <td>910モジュール等。Qが <b>0.91倍</b> になるため、N・σも同様に比例して変化します。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>5) 印刷（PDF保存）とデータ保存</h3>
+      <ul>
+
+        <li><span class="muted">（旧機能）</span>「PDF出力」：ブラウザでPDFをダウンロード（jsPDF） <span class="small">※最新版ではボタン自体を削除している運用です。</span></li>
+        <li><b>推奨：</b>「印刷」ボタン → 印刷ダイアログで「PDFに保存」<span class="small">※提出用は右側の計算結果のみが出力されます（入力欄は印刷されません）。</span></li>
+        <li><b>保存：</b>入力内容を <u>JSON</u> として保存（案件フォルダに保管）</li>
+        <li><b>読込：</b>保存したJSONを読み込み（再計算／再印刷が即可能）</li>
+        <li><b>自動保存：</b>ブラウザの <code>localStorage</code> に自動保存（誤操作・再起動時の復元用）</li>
+
+      </ul>
+
+      <div class="hr"></div>
+
+      <h2>2. この検討書を付ける理由（なぜ“めり込み”が追加で指摘されるのか）</h2>
+      <ul>
+        <li>壁倍率が <b>5を超える（例：7倍）</b> と、耐力壁端部柱に生じる <b>軸力（圧縮・引抜）が増加</b> しやすい。</li>
+        <li>このうち <b>圧縮側</b> は、柱脚で <b>土台（または横架材）への局部支圧＝めり込み</b> として現れる。</li>
+        <li>審査側の典型指摘：「壁倍率&gt;5では圧縮力・引抜力に対して横架材・基礎梁の耐力確認が必要。本件は土台の短期めり込み検討を提出してください。」</li>
+      </ul>
+
+      <p class="small">
+        社内運用の結論：<b>N値計算（引抜）＋認定金物</b> は通常どおり行う前提。<br>
+        「追加の別計算」として最も求められやすいのが <b>土台の短期めり込み</b>（圧縮側）。
+        ただし指摘文に「基礎梁」等が含まれる場合、計算追加ではなく <b>成立根拠（図面抜粋）の提示</b> を求められることがあります。
+      </p>
+
+      <div class="hr"></div>
+
+      <h2>3. どういうときに検討書を付けなければいけないか（判断基準）</h2>
+
+      <h3>A) 原則：付ける（推奨）</h3>
+      <ul>
+        <li>壁倍率 <b>&gt;5</b> の耐力壁（例：7倍壁）を採用する場合</li>
+        <li>併用（面材＋筋かい等）で、<b>加算倍率の合計が&gt;5</b> になる場合</li>
+        <li>採用耐力壁の <b>施工仕様書（認定条件）</b> に「&gt;5のとき確認」と明記されている場合</li>
+      </ul>
+
+      <h3>B) 指摘が来たら必須</h3>
+      <ul>
+        <li>確認申請・長期優良住宅（評価/認定）のいずれでも、提出を求められた場合は必須</li>
+      </ul>
+
+      <h3>C) 付けなくても通る可能性はあるが、リスクが残る</h3>
+      <ul>
+        <li>建築確認の必須審査項目としては「周辺部材影響は不要」という整理がある一方、審査機関の運用で求められることがあります。</li>
+      </ul>
+
+      <div class="hr"></div>
+
+      <h2>4. 法改正後の7倍壁まとめ（押さえる論点）</h2>
+
+      <h3>4.1 制度側の線引き（要点）</h3>
+      <ul>
+        <li>壁倍率&gt;5の <b>周辺部材影響（横架材・基礎梁）</b> は、<b>建築確認の必須審査としては確認不要</b> という整理が示されています（ただし配慮は望ましい）。</li>
+        <li>一方で、壁倍率&gt;5では従来の仕様想定外となるため、<b>柱頭・柱脚仕口はN値計算で必要引張力を算定</b> して金物選定する整理が示されています。</li>
+      </ul>
+
+      <h3>4.2 併用で実倍率が7を超える場合</h3>
+      <ul>
+        <li>壁量算定は <b>7として扱う</b> 一方、柱頭・柱脚等の検証は <b>実倍率</b> を用いる、という整理が示されています。</li>
+      </ul>
+
+      <div class="hr"></div>
+
+      <h2>5. 審査での対応（確認申請／長期優良住宅 共通）</h2>
+
+      <h3>5.1 社内標準「最小セット」</h3>
+      <ol>
+        <li><b>土台の短期めり込み検討書</b>（merikomi_calc.html で作成）</li>
+        <li><b>N値計算書（壁倍率7を反映）＋金物表</b></li>
+        <li><b>金物の根拠資料</b>（認定・性能表など）</li>
+        <li><b>耐力壁 施工仕様書の該当ページ</b>（倍率上限、併用条件、&gt;5の注意書き）</li>
+        <li>（指摘文に「基礎梁」等が明記される場合）<b>図面抜粋</b>（基礎伏図・配筋図・金物配置図）<br>
+          <span class="small">※計算追加ではなく「荷重伝達（Load Path）が成立している」説明資料として提出。</span>
+        </li>
+      </ol>
+
+      <h3>5.2 返答文（短文テンプレ）</h3>
+      <div class="card" style="margin:10px 0;background:#0e1522">
+        <p class="mono" style="margin:0">
+          当該壁は壁倍率【7.0】の耐力壁であり、施工仕様書の適用条件に基づき計画しています。<br>
+          壁倍率&gt;5に伴う柱脚部の圧縮側について、土台の短期めり込み検討を実施しました（別紙）。<br>
+          引抜についてはN値計算により必要引張力を算定し、適合する認定金物で成立していることを確認しています（別紙）。<br>
+          （必要時）基礎伏図・配筋図・金物配置図の該当部を添付し、荷重伝達が成立していることを示します。
+        </p>
+      </div>
+
+      <div class="hr"></div>
+
+      <h2>6. 出典（社内保存用：URLと日付/版を残す）</h2>
+      <ul>
+        <li>
+          <b>[1] 国土交通省（2024-05-31）</b><br>
+          「関係告示の制定・改正に関する意見募集の結果（Q&A）」<br>
+          <a href="https://www.mlit.go.jp/common/001746202.pdf" target="_blank" rel="noreferrer">https://www.mlit.go.jp/common/001746202.pdf</a>
+        </li>
+        <li>
+          <b>[2] 国土交通省（制度説明資料）</b><br>
+          「建築基準法・建築物省エネ法 改正法 制度説明資料」<br>
+          <a href="https://www.mlit.go.jp/common/001627103.pdf" target="_blank" rel="noreferrer">https://www.mlit.go.jp/common/001627103.pdf</a>
+        </li>
+        <li>
+          <b>[3] 施工仕様書例：吉野石膏（令和7年7月版の記載あり）</b><br>
+          「タイガーEXハイパー耐力壁 木造軸組大壁工法 施工仕様書（K-011-31）」<br>
+          <span class="small">※「加算した倍率合計が5を超える場合…圧縮力及び引抜力に対して横架材・基礎ばり…確認」等</span><br>
+          <a href="https://yoshino-gypsum.com/pdf/approved_doc/04_%E3%82%BF%E3%82%A4%E3%82%AC%E3%83%BCEX%E3%83%8F%E3%82%A4%E3%83%91%E3%83%BC%EF%BC%88%E8%BB%B8%E7%B5%84%EF%BC%89%E6%96%BD%E5%B7%A5%E4%BB%95%E6%A7%98%E6%9B%B8%5BR0707%E7%89%88%5D.pdf" target="_blank" rel="noreferrer">（PDFリンク）</a>
+        </li>
+        <li id="src4">
+          <b>[4] JTCCM（2025-04-01 変更の記載あり）</b><br>
+          「木造耐力壁、準耐力壁等及びその倍率の試験・評価業務方法書」<br>
+          <span class="small">※倍率定義：倍率＝Pa/(1.96L)、かつ 1.96 は「倍率＝1を算定するための数値(kN/m)」、L は壁の長さ(m)</span><br>
+          <a href="https://www.jtccm.or.jp/sites/default/files/2025-07/%E6%9C%A8%E9%80%A0%E8%80%90%E5%8A%9B%E5%A3%81%E3%80%81%E6%BA%96%E8%80%90%E5%8A%9B%E5%A3%81%E7%AD%89%E5%8F%8A%E3%81%B3%E3%81%9D%E3%81%AE%E5%80%8D%E7%8E%87%E3%81%AE%E8%A9%A6%E9%A8%93%E3%83%BB%E8%A9%95%E4%BE%A1%E6%A5%AD%E5%8B%99%E6%96%B9%E6%B3%95%E6%9B%B820250401.pdf" target="_blank" rel="noreferrer">（PDFリンク）</a>
+        </li>
+        <li>
+          <b>[5] 住宅性能評価・表示協会（長期優良の公開資料）</b><br>
+          <a href="https://www.hyoukakyoukai.or.jp/chouki/" target="_blank" rel="noreferrer">https://www.hyoukakyoukai.or.jp/chouki/</a>
+        </li>
+      
+        <li>
+          <b>[6] 小規模建築物基礎設計指針</b><br>
+          <span class="small">※表4.1.2「上部構造荷重の目安値（建築面積あたり）」を根拠として、上部構造荷重 w（kN/m²）を使用（注：同表の注意により、1階床荷重および基礎自重は含まれない整理）。本ツールでは柱・基礎計算用として P=1.3 kN/m² を加算した w+P を選択肢として採用。</span>
+        </li>
+</ul>
+
+      <div class="hr"></div>
+      <p class="small">
+        運用メモ：案件ごとに採用耐力壁の「施工仕様書」の注意書きが異なる場合があります。<br>
+        必ず当該製品の認定・評価資料の該当ページを添付し、指摘文の根拠を“その製品の文言”に合わせて返答してください。
+      </p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">コピーしました</div>
+
+  <script>
+    const content = document.getElementById('content');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(()=>toast.style.display='none', 1400);
+    }
+
+    async function copyText(text){
+      try{
+        await navigator.clipboard.writeText(text);
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+
+    function fallbackCopy(text){
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, ta.value.length);
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+
+    document.getElementById('copyHtmlBtn').addEventListener('click', async ()=>{
+      const html = content.innerHTML;
+      const ok = await copyText(html);
+      if(!ok) fallbackCopy(html);
+      showToast('コピーしました（HTML本文）');
+    });
+
+    document.getElementById('copyTextBtn').addEventListener('click', async ()=>{
+      const text = content.innerText;
+      const ok = await copyText(text);
+      if(!ok) fallbackCopy(text);
+      showToast('コピーしました（テキスト）');
+    });
+
+    document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+  </script>
+</body>
+</html>
