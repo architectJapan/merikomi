@@ -275,24 +275,9 @@
 
         <div class="hr"></div>
 
-        <h2>耐力壁の長さ（m）初期値（モジュール）</h2>
-        <div class="row">
-          <div>
-            <label>モジュール</label>
-            <select id="wallModule">
-              <option value="1.00" selected>1.00 m（1mモジュール）</option>
-              <option value="0.91">0.91 m（910mm）</option>
-            </select>
-          </div>
-          <div>
-            <label>一括設定</label>
-            <button class="btn secondary" id="applyModuleBtn" style="width:100%">全ケースの壁長さをモジュール値に</button>
-          </div>
-        </div>
-
         <div class="hr"></div>
         <div class="small mono">
-          Q = 1.96×r×L（kN） / N = Q×B×H（kN） / S_N = N+L_N（kN） / σ = (S_N×1000)/A_e（N/mm²） / σ_allow = 係数×Fcv
+          T = 1.96×r×H（kN） / N = T×B（kN） / S_N = N+L_N（kN） / σ = (S_N×1000)/A_e（N/mm²） / σ_allow = 係数×Fcv
         </div>
       </div>
 
@@ -317,8 +302,8 @@
         </div>
         <div class="paperBox">
           <ul class="mono compact">
-            <li>Q = 1.96 × r × L（kN）</li>
-            <li>N = Q × B × H（kN）</li>
+            <li>T = 1.96 × r × H（kN）</li>
+            <li>N = T × B（kN）</li>
             <li>S_N = N + L_N（kN）</li>
             <li>σ = (S_N × 1000) / A_e（N/mm²）</li>
             <li>判定：σ ≤ σ_allow</li>
@@ -351,8 +336,8 @@
           <div>
             <h2>2) 使い方（最短手順）</h2>
             <ol>
-              <li><b>共通条件</b>：物件名／階数（平屋・2階建）／柱・土台断面／めり込み有効幅w・d／めり込み補正（接触面）／土台材（樹種グループ）／Fcv／許容めり込み応力度係数（短期/長期/任意）／壁長さ（モジュール）を入力します。</li>
-              <li><b>検討入力（最大5ケース）</b>：必要なケースに<span class="tag">「使用」</span>チェックを入れ、各壁ごとに「壁倍率 r」「耐力壁の長さ L（m）」「柱位置B（出隅/中柱/任意）」「階高さH」「長期軸力L_N」を入力します。</li>
+              <li><b>共通条件</b>：物件名／階数（平屋・2階建）／柱・土台断面／めり込み有効幅w・d／めり込み補正（接触面）／土台材（樹種グループ）／Fcv／許容めり込み応力度係数（短期/長期/任意）を入力します。</li>
+              <li><b>検討入力（最大5ケース）</b>：必要なケースに<span class="tag">「使用」</span>チェックを入れ、各壁ごとに「壁倍率 r」「柱位置B（出隅/中柱/任意）」「階高さH」「長期軸力L_N」を入力します。</li>
               <li><b>印刷（PDF保存）</b>：上部の「印刷（PDF保存）」をクリックし、ブラウザの印刷ダイアログでPDF保存します（A4中央寄せで出力）。</li>
               <li><b>保存/読込</b>：案件ごとにJSONで保存・読込できます（入力は自動保存もされます）。</li>
             </ol>
@@ -362,31 +347,19 @@
             <h2>3) 入力値の意味（要点）</h2>
             <ul>
               <li><b>壁倍率 r</b>：当該耐力壁の壁倍率（例：7.00）。</li>
-              <li><b>耐力壁の長さ L（m）</b>：当該耐力壁の有効長さ（m）。<b>1.00mモジュール</b>なら1.00、<b>910mmモジュール</b>なら0.91等を入力します（本ツールでは「壁長さ（モジュール）」でデフォルトを一括設定できます）。</li>
-              <li><b>柱位置 B</b>：めり込み検討に用いる係数（出隅=0.8、中柱=0.5、任意も可）。</li>
+<li><b>柱位置 B</b>：めり込み検討に用いる係数（出隅=0.8、中柱=0.5、任意も可）。</li>
               <li><b>階高さ H（m）</b>：当該階の階高。筋かい等の壁倍率には階高による低減規定があり得るため、計画値をそのまま入れます（本ツールのめり込み計算はHも使います）。</li>
               <li><b>長期軸力 L_N（kN）</b>：鉛直荷重（長期）。デフォルトは10kNです（必要に応じて案件値に更新）。</li>
             </ul>
           </div>
 
           <div>
-            <h2>4) 「1.96」と壁長さL（壁幅）の関係</h2>
-            <p>本ツールの壁由来せん断力（短期）<b>Q</b>は、入力の壁倍率<b>r</b>と壁長さ<b>L</b>から次で算定しています：</p>
-            <ul>
-              <li><b>Q = 1.96 × r × L（kN）</b></li>
-            </ul>
-            <p>ここで<span class="tag">1.96（kN/m）</span>は、壁倍率1.0の壁が<span class="tag">壁長さ1mあたり</span>に負担できる耐力（基準）として扱われ、国土交通省の壁量基準見直し資料でも「壁の耐力（1.96kN/m）」として用いられています。<span class="tag">Lが1.00m→0.91m</span>になると、Qは比例して<b>0.91倍</b>になります（＝壁幅が短いほど、壁の負担せん断力が小さくなる）。</p>
-
-            <h3>計算例（壁倍率7）</h3>
-            <ul>
-              <li>1.00mモジュール：Q = 1.96 × 7 × 1.00 = <b>13.72kN</b></li>
-              <li>0.91mモジュール：Q = 1.96 × 7 × 0.91 = <b>12.49kN</b></li>
-            </ul>
-
-            <h3>実務メモ</h3>
-            <ul>
-              <li>本ツールでは、壁長さLをケースごとに入力できます（＝壁幅0.91mの壁が混在する計画にも対応可能）。</li>
-              <li>「壁長さ（モジュール）」はあくまで初期値の一括設定です。実際の壁長さが異なる場合は、各ケースのLを上書きしてください。</li>
+            <h2>4) めり込み検討用の短期軸力 N（Lは相殺）</h2>
+            <p>本ツールの「めり込み検討用の短期軸力N」は、許容耐力（能力）ベースで整理し、壁長さLは相殺されるため使用しません。相殺が分かる最短式は次のとおりです：</p>
+            <ul class="mono compact">
+              <li>V_a = 1.96×r×L</li>
+              <li>T = (V_a×H)/L = 1.96×r×H</li>
+              <li>N = T×B = 1.96×r×H×B</li>
             </ul>
           </div>
 
@@ -502,8 +475,6 @@
       const wrap = el('caseGrid');
       wrap.innerHTML = '';
 
-      const defL = Number(el('wallModule')?.value || 1.00);
-
       for(let i=1;i<=CASE_MAX;i++){
         const row = document.createElement('div');
         row.className = 'caseRow';
@@ -539,11 +510,7 @@
                 <label>壁倍率 r</label>
                 <input id="case_r_${i}" type="number" step="0.01" min="0" value="${i===1 ? 7.00 : 0}" />
               </div>
-              <div>
-                <label>耐力壁の長さ L（m）</label>
-                <input id="case_L_${i}" type="number" step="0.01" min="0" value="${defL.toFixed(2)}" />
-              </div>
-              <div>
+<div>
                 <label>柱位置（B）</label>
                 <select id="case_pos_${i}">
                   <option value="0.8">出隅（B=0.8）</option>
@@ -680,11 +647,10 @@
       const name = (el(`case_name_${i}`).value||"").trim();
       const note = (el(`case_note_${i}`).value||"").trim();
       const r  = Number(el(`case_r_${i}`).value||0);
-      const L  = Number(el(`case_L_${i}`).value||0);
-      const b  = Number(el(`case_b_${i}`).value||0);
+const b  = Number(el(`case_b_${i}`).value||0);
       const h  = Number(el(`case_h_${i}`).value||0);
       const ln = Number(el(`case_ln_${i}`).value||0);
-      return (name==="" && note==="" && r===0 && L===0 && b===0 && h===0 && ln===0);
+      return (name==="" && note==="" && r===0 && b===0 && h===0 && ln===0);
     }
     function isCaseEnabled(i){ return !!el(`case_on_${i}`).checked; }
 
@@ -736,8 +702,7 @@
 
       const name = (el(`case_name_${i}`).value||"").trim() || `（名称未入力）`;
       const r  = Number(el(`case_r_${i}`).value||0);
-      const L  = Number(el(`case_L_${i}`).value||0);
-      const b  = Number(el(`case_b_${i}`).value||0);
+const b  = Number(el(`case_b_${i}`).value||0);
       const h  = Number(el(`case_h_${i}`).value||0);
       const ln = Number(el(`case_ln_${i}`).value||0);
       const lnSrc = (el(`case_ln_src_${i}`)?.value || 'manual');
@@ -749,8 +714,8 @@
         : '';
       const note = (el(`case_note_${i}`).value||"").trim();
 
-      const Q  = 1.96 * r * L;     // kN
-      const N  = Q * b * h;        // kN
+      const T  = 1.96 * r * h;     // kN（Lは相殺）
+      const N  = T * b;            // kN
       const SN = N + ln;           // kN
       const sigma = (SN * 1000) / ae; // N/mm²
       const Areq = (allow>0) ? (SN * 1000) / allow : Infinity;
@@ -759,11 +724,11 @@
       host.innerHTML = `
         <div class="chkHeading"><span class="blk">■</span>検討${CIRCLED[i-1] || i} ${floor} ${name}</div>
         <div class="paperBox">
-          <div class="inputLine mono">入力：r=${fmt(r,2)}　L=${fmt(L,2)} m　B=${fmt(b,2)}　H=${fmt(h,2)} m　L_N=${fmt(ln,2)} kN</div>
+          <div class="inputLine mono">入力：r=${fmt(r,2)}　B=${fmt(b,2)}　H=${fmt(h,2)} m　L_N=${fmt(ln,2)} kN</div>
           ${lnNote ? `<div class="inputLine mono">${lnNote}</div>` : ``}
           <ul class="mono compact">
-            <li>Q = 1.96×${fmt(r,2)}×${fmt(L,2)} = ${fmt(Q,2)} kN</li>
-            <li>N = Q×B×H = ${fmt(Q,2)}×${fmt(b,2)}×${fmt(h,2)} = ${fmt(N,2)} kN</li>
+            <li>T = 1.96×r×H = 1.96×${fmt(r,2)}×${fmt(h,2)} = ${fmt(T,2)} kN</li>
+            <li>N = T×B = ${fmt(T,2)}×${fmt(b,2)} = ${fmt(N,2)} kN</li>
             <li>S_N = N + L_N = ${fmt(SN,2)} kN</li>
             <li>A_e = ${fmtInt(ae)} mm²　σ_allow=${fmt(allow,2)} N/mm²</li>
             <li>σ = (S_N×1000)/A_e = ${fmt(sigma,2)} N/mm²</li>
@@ -798,8 +763,7 @@
         fcv: el('fcv').value,
         coefMode: el('coefMode').value,
         coef: el('coef').value,
-        wallModule: el('wallModule').value,
-        cases: []
+cases: []
       };
       for(let i=1;i<=CASE_MAX;i++){
         data.cases.push({
@@ -807,8 +771,7 @@
           floor: el(`case_floor_${i}`).value,
           name: el(`case_name_${i}`).value || '',
           r: el(`case_r_${i}`).value,
-          L: el(`case_L_${i}`).value,
-          pos: el(`case_pos_${i}`).value,
+pos: el(`case_pos_${i}`).value,
           b: el(`case_b_${i}`).value,
           h: el(`case_h_${i}`).value,
           ln: el(`case_ln_${i}`).value,
@@ -837,17 +800,13 @@
       el('coefMode').value = data.coefMode ?? 'short';
       syncCoef();
       el('coef').value = data.coef ?? (2/3);
-
-      el('wallModule').value = data.wallModule ?? '1.00';
-
       (data.cases || []).slice(0,CASE_MAX).forEach((c, idx)=>{
         const i = idx+1;
         el(`case_on_${i}`).checked = (c.on ?? (i===1));
         el(`case_floor_${i}`).value = c.floor ?? "1";
         el(`case_name_${i}`).value = c.name ?? '';
         el(`case_r_${i}`).value = c.r ?? 0;
-        el(`case_L_${i}`).value = c.L ?? Number(el('wallModule').value || 1.00).toFixed(2);
-        el(`case_pos_${i}`).value = c.pos ?? '0.5';
+el(`case_pos_${i}`).value = c.pos ?? '0.5';
         el(`case_b_${i}`).value = c.b ?? 0.5;
         el(`case_h_${i}`).value = c.h ?? 2.73;
         el(`case_ln_${i}`).value = (c.ln ?? 10);
@@ -891,16 +850,6 @@
       localStorage.removeItem(LS_KEY);
       location.reload();
     }
-
-    function applyModuleToAll(){
-      const v = Number(el('wallModule').value || 1.00).toFixed(2);
-      for(let i=1;i<=CASE_MAX;i++){
-        el(`case_L_${i}`).value = v;
-      }
-      recalcAll(); autosave();
-      showToast('壁長さを一括設定しました');
-    }
-
     function bindEvents(){
       el('printBtn').addEventListener('click', ()=> window.print());
 
@@ -939,13 +888,7 @@
           resetAll();
         }
       });
-
-      el('applyModuleBtn').addEventListener('click', (e)=>{
-        e.preventDefault();
-        applyModuleToAll();
-      });
-
-      ['propertyName','floors','section','mortiseW','mortiseD','addFaces','species','fcv','coefMode','coef','wallModule']
+      ['propertyName','floors','section','mortiseW','mortiseD','addFaces','species','fcv','coefMode','coef']
         .forEach(id=>{
           el(id).addEventListener('input', ()=>{ recalcAll(); autosave(); });
           el(id).addEventListener('change', ()=>{

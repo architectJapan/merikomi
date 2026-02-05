@@ -119,7 +119,6 @@
         <li>ケース選択：ケース1〜5のチェックをONにしたものだけ、計算・印刷に反映されます。</li>
         <li>検討名（任意）：各ケースの名前（例：南面外周 7倍壁）</li>
         <li>壁倍率 <code>r</code>（例：7.0）</li>
-        <li>耐力壁の長さ（壁幅）<code>L</code>（m）<span class="small">※1.00m（1mモジュール）/ 0.91m（910モジュール）等。壁倍率→力への換算に影響します。</span></li>
         <li>柱位置（係数B）：出隅 <code>0.8</code> / 中柱 <code>0.5</code>（必要なら任意Bも可）</li>
         <li>階高さ <code>H</code>（m）</li>
         <li>長期軸力 <code>L_N</code>（kN）<span class="small">※既定値：10kN（必要に応じて変更）</span></li>
@@ -144,42 +143,20 @@
       </ul>
 
       <h3>4) 計算式（画面右の結果と同じ）</h3>
-
       <p class="note">
-        <b>追記（重要）：1.96 と「壁の長さ L」の関係</b><br>
-        壁倍率 <code>r</code> は「壁長 <code>L</code>(m) あたりの耐力」を表すため、<code>1.96</code> は <u>倍率=1を算定するための基準値（kN/m）</u> として扱われます。<br>
-        よって <b>壁長 <code>L</code> が 1.00m でない場合</b>（例：0.91m）には、結果が比例して変化します。出典は <a href="#src4">[4]</a>（JTCCM 業務方法書）です。
+        <b>重要：</b>本ツールは「許容耐力（能力）ベース」で壁由来の短期軸力を整理しており、<b>壁長さLは使用しません</b>（相殺されるため入力項目もありません）。
       </p>
 
       <ul class="mono">
-        <li><span class="muted">（参考：L=1.00m の場合の簡略式）</span> N = 1.96 × r × B × H（kN）</li>
-        <li><b>【最新】</b> Q = 1.96 × r × L（kN）</li>
-        <li><b>【最新】</b> N = Q × B × H（kN） = 1.96 × r × L × B × H（kN）</li>
+        <li>T = 1.96 × r × H（kN）</li>
+        <li>N = T × B = 1.96 × r × H × B（kN）</li>
         <li>S_N = N + L_N（kN）</li>
         <li>σ = (S_N×1000) / A_e（N/mm²）</li>
         <li>σ_allow = 係数 × Fcv（N/mm²）</li>
         <li>判定：σ ≤ σ_allow → OK</li>
       </ul>
 
-      <div class="tablewrap">
-        <table>
-          <thead>
-            <tr><th style="width:22%">例（壁倍率 r）</th><th style="width:18%">壁長 L (m)</th><th style="width:18%">Q=1.96×r×L (kN)</th><th>ポイント</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>r=7.0</td><td class="r">1.00</td><td class="r">13.72</td>
-              <td>1mモジュール想定。旧説明の「N=1.96×r×B×H」はこの場合に一致します。</td>
-            </tr>
-            <tr>
-              <td>r=7.0</td><td class="r">0.91</td><td class="r">12.49</td>
-              <td>910モジュール等。Qが <b>0.91倍</b> になるため、N・σも同様に比例して変化します。</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h3>5) 印刷（PDF保存）とデータ保存</h3>
+<h3>5) 印刷（PDF保存）とデータ保存</h3>
       <ul>
 
         <li><span class="muted">（旧機能）</span>「PDF出力」：ブラウザでPDFをダウンロード（jsPDF） <span class="small">※最新版ではボタン自体を削除している運用です。</span></li>
